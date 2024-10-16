@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Gallery from "react-photo-gallery";
-import Lightbox from "react-image-lightbox";
-import "react-image-lightbox/style.css"; // Only for lightbox
+import "./ImageUploader.css";
 
 const ImageUploader = () => {
   const [images, setImages] = useState([]);
@@ -13,18 +11,18 @@ const ImageUploader = () => {
     const files = e.target.files;
     const imageUrls = Array.from(files).map((file) => ({
       src: URL.createObjectURL(file),
-      width: 4, // Customize based on image aspect ratio
-      height: 3,
+      width: 300,
+      height: 250,
     }));
     setImages((prevImages) => [...prevImages, ...imageUrls]);
-    e.target.value = ""; // Reset the file input for next upload
+    e.target.value = "";
   };
 
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.code === "Space") {
         e.preventDefault();
-        setZoom((prevZoom) => Math.min(prevZoom + 0.25, 3)); // Max zoom at 3x
+        setZoom((prevZoom) => Math.min(prevZoom + 0.25, 3));
       }
     };
 
@@ -38,7 +36,7 @@ const ImageUploader = () => {
     };
   }, [images]);
 
-  const openLightbox = (event, { photo, index }) => {
+  const openLightbox = (index) => {
     setPhotoIndex(index);
     setIsOpen(true);
   };
@@ -53,30 +51,44 @@ const ImageUploader = () => {
         style={{ marginBottom: "10px" }}
       />
 
-      <Gallery
-        photos={images.map((image) => ({
-          ...image,
-          style: {
-            transform: `scale(${zoom})`,
-            transition: "transform 0.3s ease",
-          },
-        }))}
-        onClick={openLightbox}
-      />
+      <div className="gallery">
+        {images.map((image, index) => (
+          <img
+            key={index}
+            src={image.src}
+            alt={`Uploaded ${index + 1}`}
+            width={image.width * zoom}
+            height={image.height * zoom}
+            onClick={() => openLightbox(index)}
+            style={{ cursor: "pointer", transition: "transform 0.3s ease" }}
+          />
+        ))}
+      </div>
 
       {isOpen && images.length > 0 && (
-        <Lightbox
-          mainSrc={images[photoIndex].src}
-          nextSrc={images[(photoIndex + 1) % images.length].src}
-          prevSrc={images[(photoIndex + images.length - 1) % images.length].src}
-          onCloseRequest={() => setIsOpen(false)}
-          onMovePrevRequest={() =>
-            setPhotoIndex((photoIndex + images.length - 1) % images.length)
-          }
-          onMoveNextRequest={() =>
-            setPhotoIndex((photoIndex + 1) % images.length)
-          }
-        />
+        <div className="lightbox">
+          <span className="close" onClick={() => setIsOpen(false)}>
+            &times;
+          </span>
+          <img
+            src={images[photoIndex].src}
+            alt={`Lightbox ${photoIndex + 1}`}
+          />
+          <div className="navigation">
+            <button
+              onClick={() =>
+                setPhotoIndex((photoIndex - 1 + images.length) % images.length)
+              }
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setPhotoIndex((photoIndex + 1) % images.length)}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
