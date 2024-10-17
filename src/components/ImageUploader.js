@@ -1,95 +1,116 @@
 import React, { useState, useEffect } from "react";
+import { Upload, Modal, Button } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
+import "antd/dist/reset.css";
+import "yet-another-react-lightbox/styles.css";
+import Lightbox from "yet-another-react-lightbox";
+import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
+import "yet-another-react-lightbox/plugins/thumbnails.css";
 import "./ImageUploader.css";
 
 const ImageUploader = () => {
   const [images, setImages] = useState([]);
-  const [zoom, setZoom] = useState(1);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+  const [previewTitle, setPreviewTitle] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [zoom, setZoom] = useState(1);
 
-  const handleImageUpload = (e) => {
-    const files = e.target.files;
-    const imageUrls = Array.from(files).map((file) => ({
-      src: URL.createObjectURL(file),
-      width: 300,
-      height: 250,
-    }));
-    setImages((prevImages) => [...prevImages, ...imageUrls]);
-    e.target.value = "";
+  const handlePreview = async (file) => {
+    setPreviewImage(file.url || file.thumbUrl);
+    setPreviewVisible(true);
+    setPreviewTitle(
+      file.name || file.url.substring(file.url.lastIndexOf("/") + 1)
+    );
   };
+
+  const handleChange = (data) => {
+    let newImages = data.fileList.map((image) => image);
+    setImages(newImages);
+  };
+
+  const handleCancelPreview = () => setPreviewVisible(false);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.code === "Space") {
         e.preventDefault();
-        setZoom((prevZoom) => Math.min(prevZoom + 0.25, 3));
+        setZoom((prevZoom) => (prevZoom < 2 ? prevZoom + 0.25 : 1));
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  useEffect(() => {
     return () => {
-      images.forEach((image) => URL.revokeObjectURL(image.src));
+      window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [images]);
-
-  const openLightbox = (index) => {
-    setPhotoIndex(index);
-    setIsOpen(true);
-  };
+  }, []);
 
   return (
     <div className="image-uploader-container">
-      <input
-        type="file"
-        multiple
+      <Upload
+        fileList={[]}
+        onPreview={handlePreview}
+        onChange={handleChange}
+        beforeUpload={() => false}
         accept="image/*"
-        onChange={handleImageUpload}
-        style={{ marginBottom: "10px" }}
-      />
+        multiple
+      >
+        <Button icon={<PlusOutlined />}>Upload Images</Button>
+      </Upload>
 
-      <div className="gallery">
-        {images.map((image, index) => (
-          <img
-            key={index}
-            src={image.src}
-            alt={`Uploaded ${index + 1}`}
-            width={image.width * zoom}
-            height={image.height * zoom}
-            onClick={() => openLightbox(index)}
-            style={{ cursor: "pointer", transition: "transform 0.3s ease" }}
-          />
-        ))}
-      </div>
+      <Modal
+        visible={previewVisible}
+        title={previewTitle}
+        footer={null}
+        onCancel={handleCancelPreview}
+      >
+        <img alt="example" style={{ width: "100%" }} src={previewImage} />
+      </Modal>
 
       {isOpen && images.length > 0 && (
-        <div className="lightbox">
-          <span className="close" onClick={() => setIsOpen(false)}>
-            &times;
-          </span>
-          <img
-            src={images[photoIndex].src}
-            alt={`Lightbox ${photoIndex + 1}`}
-          />
-          <div className="navigation">
-            <button
-              onClick={() =>
-                setPhotoIndex((photoIndex - 1 + images.length) % images.length)
-              }
-            >
-              Prev
-            </button>
-            <button
-              onClick={() => setPhotoIndex((photoIndex + 1) % images.length)}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Lightbox
+          open={isOpen}
+          close={() => setIsOpen(false)}
+          slides={images.map((img) => ({
+            src: URL.createObjectURL(img.originFileObj),
+          }))}
+          index={photoIndex}
+          onIndexChange={setPhotoIndex}
+          plugins={[Thumbnails]}
+        />
       )}
+
+      <div className="uploaded-images">
+        {images.map((image, index) => (
+          <div
+            key={index}
+            style={{
+              transform: `scale(${zoom})`,
+              display: "inline-block",
+              margin: "10px",
+            }}
+          >
+            <img
+              src={URL.createObjectURL(image.originFileObj)}
+              alt={`Uploaded ${index + 1}`}
+              width="300"
+              height="250"
+              style={{
+                objectFit: "cover",
+                cursor: "pointer",
+                border: "1px solid grey",
+                margin: "10px",
+                borderRadius: "10px",
+              }}
+              onClick={() => {
+                setPhotoIndex(index);
+                setIsOpen(true);
+              }}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
