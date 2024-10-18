@@ -2,20 +2,6 @@
   text-align: center;
 }
 
-.gallery {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.gallery img {
-  margin: 5px;
-  border-radius: 5px;
-  max-width: 100%;
-  height: auto;
-}
-
 .lightbox {
   position: fixed;
   top: 0;
@@ -33,6 +19,29 @@
 .lightbox img {
   max-width: 90%;
   max-height: 80%;
+}
+
+.uploaded-images {
+  height: 90vh;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.uploaded-images .image-container {
+  display: inline-block;
+  margin: 15px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid grey;
+  border-radius: 10px;
+  height: 100%;
+  width: 100%;
+  background-color: black;
+}
+
+.uploaded-images img {
+  object-fit: contain;
+  cursor: pointer;
 }
 
 .close {

@@ -13,10 +13,37 @@ const ImageUploader = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(null);
+  const [positions, setPositions] = useState({});
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
 
   const handleChange = (data) => {
     let newImages = data.fileList.map((image) => image);
     setImages(newImages);
+  };
+
+  const handleMouseDown = (e, index) => {
+    setIsDragging(index);
+    setStartPosition({
+      x: e.clientX - (positions[index]?.x || 0),
+      y: e.clientY - (positions[index]?.y || 0),
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging !== null) {
+      setPositions((prevPositions) => ({
+        ...prevPositions,
+        [isDragging]: {
+          x: e.clientX - startPosition.x,
+          y: e.clientY - startPosition.y,
+        },
+      }));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(null);
   };
 
   useEffect(() => {
@@ -28,10 +55,15 @@ const ImageUploader = () => {
     };
 
     window.addEventListener("keydown", handleKeyPress);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, []);
+  }, [isDragging, startPosition]);
 
   return (
     <div className="image-uploader-container">
@@ -61,16 +93,11 @@ const ImageUploader = () => {
       <div className="uploaded-images">
         {images.map((image, index) => (
           <div
+            className="image-container"
             key={index}
             style={{
-              display: "inline-block",
-              margin: "15px",
-              width: "400px",
-              height: "250px",
-              overflow: "hidden",
+              width: images.length % 2 === 1 ? `${93 / 3}%` : "47%",
               position: "relative",
-              border: "1px solid grey",
-              borderRadius: "10px",
             }}
           >
             <img
@@ -80,17 +107,19 @@ const ImageUploader = () => {
                 position: "absolute",
                 top: "50%",
                 left: "50%",
-                width: "auto",
-                height: "auto",
-                minWidth: "100%",
-                minHeight: "100%",
-                transform: `translate(-50%, -50%) scale(${zoom})`,
-                cursor: "pointer",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                transform: `translate(${positions[index]?.x || 0}px, ${
+                  positions[index]?.y || 0
+                }px) translate(-50%, -50%) scale(${zoom})`,
+                cursor: isDragging === index ? "grabbing" : "grab",
               }}
               onClick={() => {
                 setPhotoIndex(index);
                 setIsOpen(true);
               }}
+              onMouseDown={(e) => handleMouseDown(e, index)}
             />
           </div>
         ))}
