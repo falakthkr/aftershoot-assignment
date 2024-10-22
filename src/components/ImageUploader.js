@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Upload, Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import "antd/dist/reset.css";
@@ -12,10 +12,11 @@ const ImageUploader = () => {
   const [images, setImages] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(null);
   const [positions, setPositions] = useState({});
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const zoomRef = useRef(1);
+  const imgContainersRef = useRef({});
 
   const handleChange = (data) => {
     let newImages = data.fileList.map((image) => image);
@@ -46,11 +47,21 @@ const ImageUploader = () => {
     setIsDragging(null);
   };
 
+  const applyZoom = () => {
+    Object.values(imgContainersRef.current).forEach((imgElement) => {
+      if (imgElement) {
+        imgElement.style.transform = `translate(-50%, -50%) scale(${zoomRef.current})`;
+        imgElement.style.transformOrigin = "center center";
+      }
+    });
+  };
+
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.code === "Space") {
         e.preventDefault();
-        setZoom((prevZoom) => (prevZoom < 2 ? prevZoom + 0.25 : 1));
+        zoomRef.current = zoomRef.current < 2 ? zoomRef.current + 0.25 : 1;
+        requestAnimationFrame(applyZoom);
       }
     };
 
@@ -96,11 +107,12 @@ const ImageUploader = () => {
             className="image-container"
             key={index}
             style={{
-              width: images.length % 2 === 1 ? `${93 / 3}%` : "47%",
+              width: images.length % 2 === 1 ? `${90 / 3}%` : "47%",
               position: "relative",
             }}
           >
             <img
+              ref={(el) => (imgContainersRef.current[index] = el)}
               src={URL.createObjectURL(image.originFileObj)}
               alt={`Uploaded ${index + 1}`}
               style={{
@@ -110,9 +122,8 @@ const ImageUploader = () => {
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
-                transform: `translate(${positions[index]?.x || 0}px, ${
-                  positions[index]?.y || 0
-                }px) translate(-50%, -50%) scale(${zoom})`,
+                transform: `translate(-50%, -50%) scale(${zoomRef.current})`,
+                transformOrigin: "center center",
                 cursor: isDragging === index ? "grabbing" : "grab",
               }}
               onClick={() => {
